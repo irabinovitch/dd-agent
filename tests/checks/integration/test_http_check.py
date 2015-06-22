@@ -49,7 +49,7 @@ CONFIG_SSL_ONLY = {
         'days_warning': 14
     }, {
         'name': 'cert_exp_soon',
-        'url': 'https://github.com',
+        'url': 'https://google.com',
         'timeout': 1,
         'check_certificate_expiration': True,
         'days_warning': 9999
@@ -141,7 +141,7 @@ class HTTPCheckTest(AgentCheckTest):
         self.assertServiceCheck("http.ssl_cert", status=AgentCheck.OK,
                                 tags=tags)
 
-        tags = ['url:https://github.com', 'instance:cert_exp_soon']
+        tags = ['url:https://google.com', 'instance:cert_exp_soon']
         self.assertServiceCheck("http.ssl_cert", status=AgentCheck.WARNING,
                                 tags=tags)
 
