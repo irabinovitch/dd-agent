@@ -137,6 +137,12 @@ CLUSTER_HEALTH_METRICS = {
     "elasticsearch.cluster_status": ("gauge", "status", lambda v: {"red": 0, "yellow": 1, "green": 2}.get(v, -1)),
 }
 
+CLUSTER_PENDING_TASKS = {
+    "elasticsearch.pending_tasks_total": ("gauge", "pending_task_total"),
+    "elasticsearch.pending_tasks_priority_high": ("gauge", "pending_tasks_priority_high"),
+    "elasticsearch.pending_tasks_priority_urgent": ("gauge", "pending_tasks_priority_urgent")
+}
+
 
 def get_es_version():
     version = os.environ.get("FLAVOR_VERSION")
@@ -177,6 +183,7 @@ class TestElastic(AgentCheckTest):
         default_tags = ["url:http://localhost:{0}".format(port)]
 
         expected_metrics = STATS_METRICS
+        CLUSTER_HEALTH_METRICS.update(CLUSTER_PENDING_TASKS)
         expected_metrics.update(CLUSTER_HEALTH_METRICS)
 
         instance_config = self.check.get_instance_config(config['instances'][0])
@@ -215,10 +222,12 @@ class TestElastic(AgentCheckTest):
         self.assertServiceCheckOK('elasticsearch.can_connect',
                                   tags=good_sc_tags,
                                   count=2)
+        self.assertServiceCheckOK('elasticsearch.cluster_health',
+                                  tags=good_sc_tags,
+                                  count=2)
         self.assertServiceCheckCritical('elasticsearch.can_connect',
                                         tags=bad_sc_tags,
                                         count=1)
-
 
         # Assert service metadata
         self.assertServiceMetadata(['version'], count=3)
