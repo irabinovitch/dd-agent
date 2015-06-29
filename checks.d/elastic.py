@@ -35,7 +35,7 @@ class ESCheck(AgentCheck):
 
     DEFAULT_TIMEOUT = 5
 
-    # Clusterwise metrics, pre aggregated on ES, compatible with all ES versions
+    # Pre aggregated metrics concerning only primary shards
     PRIMARY_SHARD_METRICS = {
         "elasticsearch.primaries.docs.count": ("gauge", "_all.primaries.docs.count"),
         "elasticsearch.primaries.docs.deleted": ("gauge", "_all.primaries.docs.deleted"),
@@ -73,6 +73,45 @@ class ESCheck(AgentCheck):
         "elasticsearch.primaries.refresh.total.time": ("gauge", "_all.primaries.refresh.total_time_in_millis", lambda v: float(v)/1000),
         "elasticsearch.primaries.flush.total": ("gauge", "_all.primaries.flush.total"),
         "elasticsearch.primaries.flush.total.time": ("gauge", "_all.primaries.flush.total_time_in_millis", lambda v: float(v)/1000)
+    }
+
+    SHARD_LEVEL_METRICS = {
+        ".docs.count": ("gauge", ".docs.count"),
+        ".docs.deleted": ("gauge", ".docs.deleted"),
+        ".store.size": ("gauge", ".store.size_in_bytes"),
+        ".indexing.index.total": ("gauge", ".indexing.index_total"),
+        ".indexing.index.time": ("gauge", ".indexing.index_time_in_millis", lambda v: float(v)/1000),
+        ".indexing.index.current": ("gauge", ".indexing.index_current"),
+        ".indexing.delete.total": ("gauge", ".indexing.delete_total"),
+        ".indexing.delete.time": ("gauge", ".indexing.delete_time_in_millis", lambda v: float(v)/1000),
+        ".indexing.delete.current": ("gauge", ".indexing.delete_current"),
+        ".get.total": ("gauge", ".get.total"),
+        ".get.time": ("gauge", ".get.time_in_millis", lambda v: float(v)/1000),
+        ".get.current": ("gauge", ".get.current"),
+        ".get.exists.total": ("gauge", ".get.exists_total"),
+        ".get.exists.time": ("gauge", ".get.exists_time_in_millis", lambda v: float(v)/1000),
+        ".get.missing.total": ("gauge", ".get.missing_total"),
+        ".get.missing.time": ("gauge", ".get.missing_time_in_millis", lambda v: float(v)/1000),
+        ".search.query.total": ("gauge", ".search.query_total"),
+        ".search.query.time": ("gauge", ".search.query_time_in_millis", lambda v: float(v)/1000),
+        ".search.query.current": ("gauge", ".search.query_current"),
+        ".search.fetch.total": ("gauge", ".search.fetch_total"),
+        ".search.fetch.time": ("gauge", ".search.fetch_time_in_millis", lambda v: float(v)/1000),
+        ".search.fetch.current": ("gauge", ".search.fetch_current")
+    }
+
+    SHARD_LEVEL_METRICS_POST_1_0 = {
+        ".merges.current": ("gauge", ".merges.current"),
+        ".merges.current.docs": ("gauge", ".merges.current_docs"),
+        ".merges.current.size": ("gauge", ".merges.current_size_in_bytes"),
+        ".merges.total": ("gauge", ".merges.total"),
+        ".merges.total.time": ("gauge", ".merges.total_time_in_millis", lambda v: float(v)/1000),
+        ".merges.total.docs": ("gauge", ".merges.total_docs"),
+        ".merges.total.size": ("gauge", ".merges.total_size_in_bytes"),
+        ".refresh.total": ("gauge", ".refresh.total"),
+        ".refresh.total.time": ("gauge", ".refresh.total_time_in_millis", lambda v: float(v)/1000),
+        ".flush.total": ("gauge", ".flush.total"),
+        ".flush.total.time": ("gauge", ".flush.total_time_in_millis", lambda v: float(v)/1000)
     }
 
     STATS_METRICS = {  # Metrics that are common to all Elasticsearch versions
