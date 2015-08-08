@@ -18,6 +18,7 @@ class CouchDb(AgentCheck):
     SERVICE_CHECK_NAME = 'couchdb.can_connect'
     SOURCE_TYPE_NAME = 'couchdb'
     TIMEOUT = 5
+    db_blacklist = {}
 
     def _create_metric(self, data, tags=None):
         overall_stats = data.get('stats', {})
@@ -42,8 +43,10 @@ class CouchDb(AgentCheck):
         auth = None
         if 'user' in instance and 'password' in instance:
             auth = (instance['user'], instance['password'])
-
-        r = requests.get(url, auth=auth, headers=headers(self.agentConfig),
+        # Override Accept request header so that failures are not redirected to the Futon web-ui
+        request_headers = headers(self.agentConfig)
+        request_headers['Accept'] = 'text/json'
+        r = requests.get(url, auth=auth, headers=request_headers,
                          timeout=int(instance.get('timeout', self.TIMEOUT)))
         r.raise_for_status()
         return r.json()
@@ -98,8 +101,10 @@ class CouchDb(AgentCheck):
 
         # Get the list of whitelisted databases.
         db_whitelist = instance.get('db_whitelist')
+        self.db_blacklist.setdefault(server,[])
+        self.db_blacklist[server].extend(instance.get('db_blacklist',[]))
         whitelist = set(db_whitelist) if db_whitelist else None
-        databases = set(self._get_stats(url, instance))
+        databases = set(self._get_stats(url, instance)) - set(self.db_blacklist[server])
         databases = databases.intersection(whitelist) if whitelist else databases
 
         if len(databases) > self.MAX_DB:
@@ -108,9 +113,13 @@ class CouchDb(AgentCheck):
 
         for dbName in databases:
             url = urljoin(server, dbName)
-
-            db_stats = self._get_stats(url, instance)
+            try:
+                db_stats = self._get_stats(url, instance)
+            except requests.exceptions.HTTPError as e:
+                couchdb['databases'][dbName] = None
+                if e.response.status_code == 403:
+                    self.db_blacklist[server].append(dbName)
+                    self.warning('Database %s is not readable by the configured user. It will be added to the blacklist. Please restart the agent to clear.' % dbName)
             if db_stats is not None:
                 couchdb['databases'][dbName] = db_stats
-
         return couchdb

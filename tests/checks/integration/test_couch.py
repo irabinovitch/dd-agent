@@ -44,3 +44,27 @@ class CouchTestCase(AgentCheckTest):
                                 status=AgentCheck.CRITICAL,
                                 tags=['instance:http://localhost:5985'],
                                 count=1)
+
+    def test_whitelist(self):
+        DB_WHITELIST = ["_replicator"]
+        self.config['instances'][0]['db_whitelist'] = DB_WHITELIST
+        self.run_check(self.config)
+        for db_name in self.DB_NAMES:
+            tags = ['instance:http://localhost:5984', 'db:{0}'.format(db_name)]
+            for gauge in self.CHECK_GAUGES:
+                if db_name in DB_WHITELIST:
+                    self.assertMetric(gauge, tags=tags, count=1)
+                else:
+                    self.assertMetric(gauge, tags=tags, count=0)
+
+    def test_blacklist(self):
+        DB_BLACKLIST = ["_replicator"]
+        self.config['instances'][0]['db_blacklist'] = DB_BLACKLIST
+        self.run_check(self.config)
+        for db_name in self.DB_NAMES:
+            tags = ['instance:http://localhost:5984', 'db:{0}'.format(db_name)]
+            for gauge in self.CHECK_GAUGES:
+                if db_name in DB_BLACKLIST:
+                    self.assertMetric(gauge, tags=tags, count=0)
+                else:
+                    self.assertMetric(gauge, tags=tags, count=1)
