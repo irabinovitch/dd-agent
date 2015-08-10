@@ -9,6 +9,7 @@ from tests.checks.common import AgentCheckTest
 @attr(requires='couchdb')
 class CouchTestCase(AgentCheckTest):
 
+    TEST_ORDER = 0
     CHECK_NAME = 'couch'
     DB_NAMES = ['_users', '_replicator']
     CHECK_GAUGES = [
@@ -18,10 +19,10 @@ class CouchTestCase(AgentCheckTest):
 
     def __init__(self, *args, **kwargs):
         AgentCheckTest.__init__(self, *args, **kwargs)
-        self.config = {"instances": [{"server": "http://localhost:5984"}]}
 
     def test_couch(self):
-        self.run_check(self.config)
+        config = {"instances": [{"server": "http://localhost:5984"}]}
+        self.run_check(config,force_reload=True)
         for db_name in self.DB_NAMES:
             tags = ['instance:http://localhost:5984', 'db:{0}'.format(db_name)]
             for gauge in self.CHECK_GAUGES:
@@ -37,7 +38,7 @@ class CouchTestCase(AgentCheckTest):
     def test_bad_config(self):
         self.assertRaises(
             Exception,
-            lambda: self.run_check({"instances": [{"server": "http://localhost:5985"}]})
+            lambda: self.run_check({"instances": [{"server": "http://localhost:5985"}]}, force_reload=True)
         )
 
         self.assertServiceCheck(self.check.SERVICE_CHECK_NAME,
@@ -47,8 +48,8 @@ class CouchTestCase(AgentCheckTest):
 
     def test_whitelist(self):
         DB_WHITELIST = ["_replicator"]
-        self.config['instances'][0]['db_whitelist'] = DB_WHITELIST
-        self.run_check(self.config)
+        whitelist_config = {'instances': [{'db_whitelist': DB_WHITELIST, 'server': 'http://localhost:5984'}]}
+        self.run_check(whitelist_config,force_reload=True)
         for db_name in self.DB_NAMES:
             tags = ['instance:http://localhost:5984', 'db:{0}'.format(db_name)]
             for gauge in self.CHECK_GAUGES:
@@ -59,8 +60,8 @@ class CouchTestCase(AgentCheckTest):
 
     def test_blacklist(self):
         DB_BLACKLIST = ["_replicator"]
-        self.config['instances'][0]['db_blacklist'] = DB_BLACKLIST
-        self.run_check(self.config)
+        blacklist_config = {'instances': [{'db_blacklist': DB_BLACKLIST, 'server': 'http://localhost:5984'}]}
+        self.run_check(blacklist_config,force_reload=True)
         for db_name in self.DB_NAMES:
             tags = ['instance:http://localhost:5984', 'db:{0}'.format(db_name)]
             for gauge in self.CHECK_GAUGES:
